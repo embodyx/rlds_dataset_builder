@@ -22,11 +22,11 @@ Raw HDF5 layout (input):
 
 Usage
 -----
-1.  Place this file inside a folder named  ur3_bimanual_dataset/
+1.  Place this file inside a folder named  scanning_barcode/
 2.  Set HDF5_DIR below (or export env-var HDF5_DATASET_DIR) to the
     directory containing your raw .hdf5 files.
 3.  Run:
-        cd ur3_bimanual_dataset
+        cd scanning_barcode
         tfds build --overwrite
     This produces a TFDS dataset in ~/tensorflow_datasets/ur3_bimanual_dataset/
 
@@ -134,7 +134,7 @@ def _load_episode(hdf5_path: str) -> Dict[str, Any]:
 
 # ── Dataset Builder ───────────────────────────────────────────────────────────
 
-class Ur3BimanualDataset(tfds.core.GeneratorBasedBuilder):
+class ScanningBarcodeDataset(tfds.core.GeneratorBasedBuilder):
     """
     TFDS / RLDS builder for bimanual UR3 manipulation episodes.
 

@@ -78,69 +78,32 @@ The command line output should finish with a summary of the generated dataset (i
 Please verify that this output looks as expected and that you can find the generated `tfrecord` files in `~/tensorflow_datasets/<name_of_your_dataset>`.
 
 
-### Parallelizing Data Processing
-By default, dataset conversion is single-threaded. If you are parsing a large dataset, you can use parallel processing.
-For this, replace the last two lines of `_generate_examples()` with the commented-out `beam` commands. This will use 
-Apache Beam to parallelize data processing. Before starting the processing, you need to install your dataset package 
-by filling in the name of your dataset into `setup.py` and running `pip install -e .`
+### Example of converting the scanning_barcode dataset
+1. Record data in `.hdf5` format and put them into `/rlds_dataset_builder/scanning_barcode/data/` folder.
 
-Then, make sure that no GPUs are used during data processing (`export CUDA_VISIBLE_DEVICES=`) and run:
-```
-tfds build --overwrite --beam_pipeline_options="direct_running_mode=multi_processing,direct_num_workers=10"
-```
-You can specify the desired number of workers with the `direct_num_workers` argument.
+2. Edit the scanning_barcode_dataset_builder.py file
 
-## Visualize Converted Dataset
-To verify that the data is converted correctly, please run the data visualization script from the base directory:
-```
-python3 visualize_dataset.py <name_of_your_dataset>
-``` 
-This will display a few random episodes from the dataset with language commands and visualize action and state histograms per dimension.
-Note, if you are running on a headless server you can modify `WANDB_ENTITY` at the top of `visualize_dataset.py` and 
-add your own WandB entity -- then the script will log all visualizations to WandB. 
+   1. ```
+      LANGUAGE_INSTRUCTION = "scan barcode"  # your actual task description
+      ```
 
-## Add Transform for Target Spec
+3. Build the RLDS dataset
 
-For X-embodiment training we are using specific inputs / outputs for the model: input is a single RGB camera, output
-is an 8-dimensional action, consisting of end-effector position and orientation, gripper open/close and a episode termination
-action.
+   1. ```
+      export HDF5_DATASET_DIR=/path/to/your/hdf5/files
+      cd /path/to/rlds_dataset_builder/scanning_barcode
+      tfds build --overwrite
+      ```
 
-The final step in adding your dataset to the training mix is to provide a transform function, that transforms a step
-from your original dataset above to the required training spec. Please follow the two simple steps below:
+   2. This write the dataset to `~/tesnorflow_dataset/scanning_barcode/1.0.0/`
 
-1. **Modify Step Transform**: Modify the function `transform_step()` in `example_transform/transform.py`. The function 
-takes in a step from your dataset above and is supposed to map it to the desired output spec. The file contains a detailed
-description of the desired output spec.
+4. Compress the dataset and upload it to Google Cloud Storage for training
 
-2. **Test Transform**: We provide a script to verify that the resulting __transformed__ dataset outputs match the desired
-output spec. Please run the following command: `python3 test_dataset_transform.py <name_of_your_dataset>`
+   1. ```
+      cd ~/tensorflow_datasets/scanning_barcode_dataset/
+      zip -r 1.0.0.zip 1.0.0/
+      ```
 
-If the test passes successfully, you are ready to upload your dataset!
-
-## Upload Your Data
-
-We provide a Google Cloud bucket that you can upload your data to. First, install `gsutil`, the Google cloud command 
-line tool. You can follow the installation instructions [here](https://cloud.google.com/storage/docs/gsutil_install).
-
-Next, authenticate your Google account with:
-```
-gcloud auth login
-``` 
-This will open a browser window that allows you to log into your Google account (if you're on a headless server, 
-you can add the `--no-launch-browser` flag). Ideally, use the email address that
-you used to communicate with Karl, since he will automatically grant permission to the bucket for this email address. 
-If you want to upload data with a different email address / google account, please shoot Karl a quick email to ask 
-to grant permissions to that Google account!
-
-After logging in with a Google account that has access permissions, you can upload your data with the following 
-command:
-```
-gsutil -m cp -r ~/tensorflow_datasets/<name_of_your_dataset> gs://xembodiment_data
-``` 
-This will upload all data using multiple threads. If your internet connection gets interrupted anytime during the upload
-you can just rerun the command and it will resume the upload where it was interrupted. You can verify that the upload
-was successful by inspecting the bucket [here](https://console.cloud.google.com/storage/browser/xembodiment_data).
-
-The last step is to commit all changes to this repo and send Karl the link to the repo.
-
-**Thanks a lot for contributing your data! :)**
+   2. ```
+      gsutil cp 1.0.0.zip gs://vla-training/1.0.0.zip
+      ```
